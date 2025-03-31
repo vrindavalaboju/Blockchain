@@ -7,34 +7,65 @@ contract AccessControl {
     // Mapping to store restricted topics
     mapping(string => bool) public restrictedTopics;
     
-    // Event for logging query validation
+    // Events for logging
     event QueryValidated(address user, string query, bool allowed);
+    event QueryProcessed(string query, string responseHash);
+    event TopicRestrictionChanged(string topic, bool isRestricted);
+    
+    // User roles (0 = regular, 1 = admin, 2 = medical professional)
+    mapping(address => uint8) public userRoles;
     
     constructor() {
         owner = msg.sender;
+        userRoles[msg.sender] = 1; // Owner is admin
         
         // Add initial restricted topics
         restrictedTopics["medication"] = true;
         restrictedTopics["diagnosis"] = true;
+        restrictedTopics["patient"] = true;
         restrictedTopics["treatment"] = true;
+        restrictedTopics["medical"] = true;
     }
     
-    // Function to validate if a query contains restricted content
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function");
+        _;
+    }
+    
+    modifier onlyAdmin() {
+        require(userRoles[msg.sender] >= 1, "Only admins can call this function");
+        _;
+    }
+    
+    // Function to validate if a query should be processed
     function validateQuery(string memory query) public returns (bool) {
-        // This is a simplistic implementation
-        // In a real system, you would need more sophisticated validation
-        bool isRestricted = false;
+        // In a real implementation, this would connect to your NLP filter results
+        bool isAllowed = true;
         
-        // Logic to check if query contains restricted topics
-        // This would be connected to your NLP filter results
-        
-        emit QueryValidated(msg.sender, query, !isRestricted);
-        return !isRestricted;
+        // Log the validation result
+        emit QueryValidated(msg.sender, query, isAllowed);
+        return isAllowed;
     }
     
-    // Function to add new restricted topics (admin only)
-    function addRestrictedTopic(string memory topic) public {
-        require(msg.sender == owner, "Only owner can add restricted topics");
+    // Function to log processed queries and responses
+    function logQueryProcessing(string memory query, string memory responseHash) public {
+        // This function creates an immutable audit log of interactions
+        emit QueryProcessed(query, responseHash);
+    }
+    
+    // Admin functions
+    function addRestrictedTopic(string memory topic) public onlyAdmin {
         restrictedTopics[topic] = true;
+        emit TopicRestrictionChanged(topic, true);
+    }
+    
+    function removeRestrictedTopic(string memory topic) public onlyAdmin {
+        restrictedTopics[topic] = false;
+        emit TopicRestrictionChanged(topic, false);
+    }
+    
+    function assignUserRole(address user, uint8 role) public onlyOwner {
+        require(role <= 2, "Invalid role");
+        userRoles[user] = role;
     }
 }
