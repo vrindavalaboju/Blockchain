@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Protected Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .chat-container {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        .input-container {
+            display: flex;
+        }
+        #query-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background-color: #e6f7ff;
+            margin-left: 20%;
+        }
+        .bot-message {
+            background-color: #f1f1f1;
+            margin-right: 20%;
+        }
+        .status-message {
+            color: #888;
+            font-style: italic;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Blockchain-Protected Healthcare Chatbot</h1>
+    <p>This chatbot uses blockchain technology to protect your privacy and security.</p>
+    <div class="chat-container" id="chat-container"></div>
+    <div class="input-container">
+        <input type="text" id="query-input" placeholder="Ask something...">
+        <button onclick="sendQuery()">Send</button>
+    </div>
+
+    <script>
+        // Display a welcome message
+        addMessage('Welcome to the blockchain-protected chatbot. Your privacy is our priority.', 'bot');
+        addMessage('Try asking a general question, but note that healthcare-related queries will be filtered for your privacy protection.', 'bot');
+
+        async function sendQuery() {
+            const queryInput = document.getElementById('query-input');
+            const query = queryInput.value.trim();
+            
+            if (!query) return;
+            
+            // Display user message
+            addMessage(query, 'user');
+            
+            // Clear input
+            queryInput.value = '';
+            
+            // Add a "processing" message
+            const processingId = addMessage('Processing through blockchain validation...', 'status');
+            
+            try {
+                // Send query to backend
+                const response = await fetch('http://localhost:3000/api/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query })
+                });
+                
+                const data = await response.json();
+                
+                // Remove processing message
+                removeMessage(processingId);
+                
+                // Display bot response based on status
+                if (data.status === 'approved') {
+                    addMessage(data.message, 'bot');
+                } else if (data.status === 'blocked') {
+                    addMessage(`Privacy Protection: ${data.message}`, 'bot');
+                } else {
+                    addMessage(`Error: ${data.message}`, 'status');
+                }
+            } catch (error) {
+                // Remove processing message
+                removeMessage(processingId);
+                
+                // Display error
+                addMessage('Error connecting to the server. Please make sure the backend is running.', 'status');
+                console.error('Error:', error);
+            }
+        }
+        
+        function addMessage(text, type) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            
+            if (type === 'user') {
+                messageDiv.classList.add('user-message');
+            } else if (type === 'bot') {
+                messageDiv.classList.add('bot-message');
+            } else {
+                messageDiv.classList.add('status-message');
+            }
+            
+            messageDiv.textContent = text;
+            chatContainer.appendChild(messageDiv);
+            
+            // Auto-scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // Return ID for potential removal
+            return Date.now();
+        }
+        
+        function removeMessage(id) {
+            const chatContainer = document.getElementById('chat-container');
+            const messages = chatContainer.getElementsByClassName('status-message');
+            if (messages.length > 0) {
+                chatContainer.removeChild(messages[0]);
+            }
+        }
+        
+        // Allow Enter key to send message
+        document.getElementById('query-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendQuery();
+            }
+        });
+    </script>
+</body>
+</html>
