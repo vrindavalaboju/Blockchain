@@ -3,73 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blockchain Protected Chatbot</title>
+    <title>Healthcare Blockchain Chatbot</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .header p {
+            color: #7f8c8d;
+            margin-top: 0;
         }
         .chat-container {
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
             height: 400px;
             overflow-y: auto;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .input-container {
             display: flex;
         }
         #query-input {
             flex-grow: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px 0 0 8px;
+            font-size: 16px;
         }
         button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
+            padding: 12px 20px;
+            background-color: #3498db;
             color: white;
             border: none;
-            border-radius: 5px;
-            margin-left: 10px;
+            border-radius: 0 8px 8px 0;
             cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
         }
         .message {
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 5px;
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            max-width: 80%;
+            position: relative;
         }
         .user-message {
-            background-color: #e6f7ff;
-            margin-left: 20%;
+            background-color: #e3f2fd;
+            margin-left: auto;
+            border-bottom-right-radius: 0;
         }
         .bot-message {
             background-color: #f1f1f1;
-            margin-right: 20%;
+            margin-right: auto;
+            border-bottom-left-radius: 0;
         }
         .status-message {
-            color: #888;
+            color: #7f8c8d;
             font-style: italic;
+            text-align: center;
+            max-width: 100%;
+            background-color: #f8f9fa;
+            padding: 8px;
+        }
+        .message-metadata {
+            font-size: 12px;
+            color: #95a5a6;
+            margin-top: 5px;
+            padding-top: 5px;
+            border-top: 1px solid #eee;
+        }
+        .blockchain-verified {
+            display: inline-block;
+            background-color: #2ecc71;
+            color: white;
+            font-size: 10px;
+            padding: 2px 5px;
+            border-radius: 3px;
+            margin-left: 5px;
+        }
+        .disclaimer {
+            font-size: 12px;
+            color: #95a5a6;
+            margin-top: 15px;
             text-align: center;
         }
     </style>
 </head>
 <body>
-    <h1>Blockchain-Protected Healthcare Chatbot</h1>
-    <p>This chatbot uses blockchain technology to protect your privacy and security.</p>
+    <div class="header">
+        <h1>Healthcare Blockchain Chatbot</h1>
+        <p>HIPAA-compliant with blockchain-based privacy protection</p>
+    </div>
     <div class="chat-container" id="chat-container"></div>
     <div class="input-container">
-        <input type="text" id="query-input" placeholder="Ask something...">
+        <input type="text" id="query-input" placeholder="Ask a healthcare question...">
         <button onclick="sendQuery()">Send</button>
+    </div>
+    <div class="disclaimer">
+        This chatbot provides general medical information. It is not a substitute for professional medical advice, diagnosis, or treatment.
     </div>
 
     <script>
         // Display a welcome message
-        addMessage('Welcome to the blockchain-protected chatbot. Your privacy is our priority.', 'bot');
-        addMessage('Try asking a general question, but note that healthcare-related queries will be filtered for your privacy protection.', 'bot');
+        addMessage('Welcome to the HIPAA-compliant healthcare chatbot. Your privacy is protected through blockchain technology.', 'bot');
+        addMessage('You can ask general medical questions while our system ensures privacy and security.', 'bot');
 
         async function sendQuery() {
             const queryInput = document.getElementById('query-input');
@@ -84,11 +138,11 @@
             queryInput.value = '';
             
             // Add a "processing" message
-            const processingId = addMessage('Processing through blockchain validation...', 'status');
+            const processingId = addMessage('Processing your query securely...', 'status');
             
             try {
                 // Send query to backend
-                const response = await fetch('http://localhost:3000/api/query', {
+                const response = await fetch('/api/query', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -103,7 +157,7 @@
                 
                 // Display bot response based on status
                 if (data.status === 'approved') {
-                    addMessage(data.message, 'bot');
+                    addMessage(data.message, 'bot', data.metadata);
                 } else if (data.status === 'blocked') {
                     addMessage(`Privacy Protection: ${data.message}`, 'bot');
                 } else {
@@ -119,7 +173,7 @@
             }
         }
         
-        function addMessage(text, type) {
+        function addMessage(text, type, metadata = null) {
             const chatContainer = document.getElementById('chat-container');
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('message');
@@ -133,6 +187,27 @@
             }
             
             messageDiv.textContent = text;
+            
+            // Add metadata if available
+            if (metadata && type === 'bot') {
+                const metadataDiv = document.createElement('div');
+                metadataDiv.classList.add('message-metadata');
+                
+                let metadataHTML = '';
+                if (metadata.model) {
+                    metadataHTML += `Model: ${metadata.model} | `;
+                }
+                if (metadata.tokensUsed) {
+                    metadataHTML += `Tokens: ${metadata.tokensUsed} | `;
+                }
+                if (metadata.responseHash) {
+                    metadataHTML += `<span class="blockchain-verified" title="Response hash: ${metadata.responseHash}">Blockchain Verified</span>`;
+                }
+                
+                metadataDiv.innerHTML = metadataHTML;
+                messageDiv.appendChild(metadataDiv);
+            }
+            
             chatContainer.appendChild(messageDiv);
             
             // Auto-scroll to bottom

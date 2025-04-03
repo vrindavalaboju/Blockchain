@@ -4,6 +4,8 @@ const cors = require('cors');
 const { Web3 } = require('web3');
 const fs = require('fs');
 const path = require('path');
+// const { filterSensitiveContent } = require('./nlp-filter');
+const { generateResponse, createResponseHash } = require('./llm-service');
 
 // Load contract ABI
 const contractABI = JSON.parse(
@@ -26,39 +28,61 @@ const accessControlContract = new web3.eth.Contract(contractABI, contractAddress
 // Simple NLP filter function (will be expanded)
 function filterSensitiveContent(query) {
   const sensitiveKeywords = ['diagnosis', 'medication', 'patient', 'treatment', 'medical'];
-  return !sensitiveKeywords.some(keyword => query.toLowerCase().includes(keyword));
+  const containsSensitive = sensitiveKeywords.some(keyword => query.toLowerCase().includes(keyword));
+  
+  return {
+    allowed: !containsSensitive,
+    reason: containsSensitive ? 'Contains sensitive healthcare keywords' : 'No sensitive content detected'
+  };
 }
 
-// Simulate LLM response (will be replaced with actual LLM API call)
-function generateLLMResponse(query) {
-  return `This is a simulated response to your query: "${query}"`;
-}
+// // Simulate LLM response (will be replaced with actual LLM API call)
+// function generateLLMResponse(query) {
+//   return `This is a simulated response to your query: "${query}"`;
+// }
 
 // Add this before your app.post('/api/query', ...) code
 app.get('/', (req, res) => {
-    res.send(`
-      <html>
-        <head>
-          <title>Blockchain Chatbot API</title>
-          <style>
-            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-            h1 { color: #2c3e50; }
-            code { background-color: #f7f7f7; padding: 2px 5px; border-radius: 3px; }
-          </style>
-        </head>
-        <body>
-          <h1>Blockchain Chatbot API</h1>
-          <p>This is the API server for the blockchain-protected chatbot.</p>
-          <p>To interact with the chatbot, please:</p>
-          <ol>
-            <li>Open the <code>client.html</code> file in your browser</li>
-            <li>Or make POST requests to <code>/api/query</code> with a JSON body containing a query field</li>
-          </ol>
-        </body>
-      </html>
-    `);
-  });
+  res.send(`
+    <html>
+      <head>
+        <title>Healthcare Blockchain Chatbot</title>
+        <style>
+          body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+          h1 { color: #2c3e50; }
+          code { background-color: #f7f7f7; padding: 2px 5px; border-radius: 3px; }
+        </style>
+      </head>
+      <body>
+        <h1>Healthcare Blockchain Chatbot API</h1>
+        <p>This is the API server for the HIPAA-compliant blockchain-protected healthcare chatbot.</p>
+        <p>To interact with the chatbot, please:</p>
+        <ol>
+          <li>Open the <code>client.html</code> file in your browser</li>
+          <li>Or make POST requests to <code>/api/query</code> with a JSON body containing a query field</li>
+        </ol>
+      </body>
+    </html>
+  `);
+});
 
+app.get('/client', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client.html'));
+});
+
+// Simple NLP filter if you haven't implemented the full module
+function simpleFilterSensitiveContent(query) {
+  // This is a very basic filter - replace with your nlp-filter.js implementation
+  const sensitiveKeywords = ['ssn', 'social security', 'address', 'phone number', 'birth date', 'email'];
+  const containsSensitive = sensitiveKeywords.some(keyword => 
+    query.toLowerCase().includes(keyword)
+  );
+  
+  return {
+    allowed: !containsSensitive,
+    reason: containsSensitive ? 'Contains personally identifiable information' : 'No PII detected'
+  };
+}
 // API endpoint for chatbot query processing
 app.post('/api/query', async (req, res) => {
   try {
@@ -71,11 +95,11 @@ app.post('/api/query', async (req, res) => {
     console.log('Received query:', query);
     
     // Step 1: Off-chain NLP filtering
-    const passedNLPFilter = filterSensitiveContent(query);
-    if (!passedNLPFilter) {
+    const filterResult = filterSensitiveContent(query);
+    if (!filterResult.allowed) {
       return res.json({ 
         status: 'blocked',
-        message: 'Query contains sensitive healthcare information and was blocked by NLP filter.'
+        message: `Query blocked: ${filterResult.reason}`
       });
     }
     
@@ -88,7 +112,8 @@ app.post('/api/query', async (req, res) => {
       console.log('Blockchain validation result:', validateResult);
       
       // If the query passed both filters, process it
-      const llmResponse = generateLLMResponse(query);
+      const llmResult = await generateResponse(query);
+      const llmResponse = llmResult.text;
       
       // Log the interaction on the blockchain (if you have this function)
       try {
