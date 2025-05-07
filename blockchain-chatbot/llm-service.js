@@ -2,7 +2,9 @@ require('dotenv').config();
 const fetch = require('node-fetch');
 
 // Add your Hugging Face token here
-const HF_TOKEN = "hf_your_new_token_here"; // Replace with your actual token
+const HF_TOKEN = process.env.HUGGINGFACE_API_KEY;
+ // Replace with your actual token
+
 
 // System prompt for healthcare chatbot
 const SYSTEM_PROMPT = `

@@ -1,11 +1,12 @@
 const express = require('express');
 const cors = require('cors');
-// Update this line in server.js
-const { Web3 } = require('web3');
+const Web3 = require('web3');
 const fs = require('fs');
 const path = require('path');
-// const { filterSensitiveContent } = require('./nlp-filter');
+const uploadToPinata = require('./pinataUploader'); // ✅ NEW
 const { generateResponse, createResponseHash } = require('./llm-service');
+
+require('dotenv').config(); // Make sure to load your .env
 
 // Load contract ABI
 const contractABI = JSON.parse(
@@ -15,7 +16,7 @@ const contractABI = JSON.parse(
 ).abi;
 
 // Contract address from deployment
-const contractAddress = '0xe78A0F7E598Cc8b0Bb87894B0F60dD2a88d6a8Ab';
+const contractAddress = require('./contract-address.json').address;
 
 const app = express();
 app.use(cors());
@@ -25,7 +26,7 @@ app.use(express.json());
 const web3 = new Web3('http://localhost:8545');
 const accessControlContract = new web3.eth.Contract(contractABI, contractAddress);
 
-// Simple NLP filter function (will be expanded)
+// Simple NLP filter function
 function filterSensitiveContent(query) {
   const sensitiveKeywords = ['diagnosis', 'medication', 'patient', 'treatment', 'medical'];
   const containsSensitive = sensitiveKeywords.some(keyword => query.toLowerCase().includes(keyword));
@@ -36,12 +37,6 @@ function filterSensitiveContent(query) {
   };
 }
 
-// // Simulate LLM response (will be replaced with actual LLM API call)
-// function generateLLMResponse(query) {
-//   return `This is a simulated response to your query: "${query}"`;
-// }
-
-// Add this before your app.post('/api/query', ...) code
 app.get('/', (req, res) => {
   res.send(`
     <html>
@@ -70,31 +65,18 @@ app.get('/client', (req, res) => {
   res.sendFile(path.join(__dirname, 'client.html'));
 });
 
-// Simple NLP filter if you haven't implemented the full module
-function simpleFilterSensitiveContent(query) {
-  // This is a very basic filter - replace with your nlp-filter.js implementation
-  const sensitiveKeywords = ['ssn', 'social security', 'address', 'phone number', 'birth date', 'email'];
-  const containsSensitive = sensitiveKeywords.some(keyword => 
-    query.toLowerCase().includes(keyword)
-  );
-  
-  return {
-    allowed: !containsSensitive,
-    reason: containsSensitive ? 'Contains personally identifiable information' : 'No PII detected'
-  };
-}
-// API endpoint for chatbot query processing
+// Chatbot API
 app.post('/api/query', async (req, res) => {
   try {
     const { query } = req.body;
-    
+
     if (!query) {
       return res.status(400).json({ error: 'Query is required' });
     }
-    
+
     console.log('Received query:', query);
-    
-    // Step 1: Off-chain NLP filtering
+
+    // Step 1: NLP filter
     const filterResult = filterSensitiveContent(query);
     if (!filterResult.allowed) {
       return res.json({ 
@@ -102,30 +84,56 @@ app.post('/api/query', async (req, res) => {
         message: `Query blocked: ${filterResult.reason}`
       });
     }
-    
-    // Step 2: Blockchain-based validation
+
+    // Step 2: Blockchain validation
     const accounts = await web3.eth.getAccounts();
     try {
       const validateResult = await accessControlContract.methods.validateQuery(query)
         .send({ from: accounts[0], gas: 200000 });
-      
       console.log('Blockchain validation result:', validateResult);
-      
-      // If the query passed both filters, process it
+
+      // Step 3: LLM generation
       const llmResult = await generateResponse(query);
       const llmResponse = llmResult.text;
-      
-      // Log the interaction on the blockchain (if you have this function)
+      let ipfsUrl = null;
+      // Step 4: Upload to Pinata
+      try {
+        const logContent = `User query: ${query}\nResponse: ${llmResponse}`;
+        const filePath = `./temp/log_${Date.now()}.txt`;
+
+        if (!fs.existsSync('./temp')) fs.mkdirSync('./temp');
+        fs.writeFileSync(filePath, logContent);
+
+        const cid = await uploadToPinata(filePath);
+        fs.unlinkSync(filePath);
+        ipfsUrl = `https://gateway.pinata.cloud/ipfs/${cid}`;
+        console.log('Uploaded to IPFS via Pinata:', cid);
+
+
+        // Optional: store CID on chain
+        if (accessControlContract.methods.storeIPFSCID) {
+          await accessControlContract.methods.storeIPFSCID(cid)
+            .send({ from: accounts[0], gas: 200000 });
+        }
+      } catch (pinataErr) {
+        console.error('Pinata upload failed:', pinataErr.message);
+      }
+
+      // Step 5: Log response on-chain (if implemented)
       try {
         await accessControlContract.methods.logQueryProcessing(query, llmResponse)
           .send({ from: accounts[0], gas: 200000 });
-      } catch (error) {
-        console.log('Logging to blockchain failed, but continuing:', error.message);
+      } catch (logErr) {
+        console.log('Logging to blockchain failed, continuing anyway:', logErr.message);
       }
-      
+
       return res.json({
         status: 'approved',
-        message: llmResponse
+        message: llmResponse,
+        metadata: {
+          responseHash: '...', // if you have this
+          ipfsUrl: ipfsUrl      // 👈 This is key!
+        }
       });
     } catch (error) {
       console.error('Blockchain validation error:', error);

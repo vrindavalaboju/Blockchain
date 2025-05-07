@@ -121,41 +121,28 @@
     </div>
 
     <script>
-        // Display a welcome message
         addMessage('Welcome to the HIPAA-compliant healthcare chatbot. Your privacy is protected through blockchain technology.', 'bot');
         addMessage('You can ask general medical questions while our system ensures privacy and security.', 'bot');
 
         async function sendQuery() {
             const queryInput = document.getElementById('query-input');
             const query = queryInput.value.trim();
-            
             if (!query) return;
-            
-            // Display user message
+
             addMessage(query, 'user');
-            
-            // Clear input
             queryInput.value = '';
-            
-            // Add a "processing" message
             const processingId = addMessage('Processing your query securely...', 'status');
-            
+
             try {
-                // Send query to backend
-                const response = await fetch('/api/query', {
+                const response = await fetch('http://localhost:3000/api/query', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ query })
                 });
-                
+
                 const data = await response.json();
-                
-                // Remove processing message
                 removeMessage(processingId);
-                
-                // Display bot response based on status
+
                 if (data.status === 'approved') {
                     addMessage(data.message, 'bot', data.metadata);
                 } else if (data.status === 'blocked') {
@@ -164,72 +151,49 @@
                     addMessage(`Error: ${data.message}`, 'status');
                 }
             } catch (error) {
-                // Remove processing message
                 removeMessage(processingId);
-                
-                // Display error
                 addMessage('Error connecting to the server. Please make sure the backend is running.', 'status');
                 console.error('Error:', error);
             }
         }
-        
+
         function addMessage(text, type, metadata = null) {
             const chatContainer = document.getElementById('chat-container');
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('message');
-            
-            if (type === 'user') {
-                messageDiv.classList.add('user-message');
-            } else if (type === 'bot') {
-                messageDiv.classList.add('bot-message');
-            } else {
-                messageDiv.classList.add('status-message');
-            }
-            
+            if (type === 'user') messageDiv.classList.add('user-message');
+            else if (type === 'bot') messageDiv.classList.add('bot-message');
+            else messageDiv.classList.add('status-message');
+
             messageDiv.textContent = text;
-            
-            // Add metadata if available
+
             if (metadata && type === 'bot') {
                 const metadataDiv = document.createElement('div');
                 metadataDiv.classList.add('message-metadata');
-                
+
                 let metadataHTML = '';
-                if (metadata.model) {
-                    metadataHTML += `Model: ${metadata.model} | `;
-                }
-                if (metadata.tokensUsed) {
-                    metadataHTML += `Tokens: ${metadata.tokensUsed} | `;
-                }
-                if (metadata.responseHash) {
-                    metadataHTML += `<span class="blockchain-verified" title="Response hash: ${metadata.responseHash}">Blockchain Verified</span>`;
-                }
-                
+                if (metadata.model) metadataHTML += `Model: ${metadata.model} | `;
+                if (metadata.tokensUsed) metadataHTML += `Tokens: ${metadata.tokensUsed} | `;
+                if (metadata.responseHash) metadataHTML += `<span class="blockchain-verified" title="Response hash: ${metadata.responseHash}">Blockchain Verified</span> `;
+                if (metadata.ipfsUrl) metadataHTML += `| <a href="${metadata.ipfsUrl}" target="_blank">View on IPFS</a>`;
+
                 metadataDiv.innerHTML = metadataHTML;
                 messageDiv.appendChild(metadataDiv);
             }
-            
+
             chatContainer.appendChild(messageDiv);
-            
-            // Auto-scroll to bottom
             chatContainer.scrollTop = chatContainer.scrollHeight;
-            
-            // Return ID for potential removal
             return Date.now();
         }
-        
+
         function removeMessage(id) {
             const chatContainer = document.getElementById('chat-container');
             const messages = chatContainer.getElementsByClassName('status-message');
-            if (messages.length > 0) {
-                chatContainer.removeChild(messages[0]);
-            }
+            if (messages.length > 0) chatContainer.removeChild(messages[0]);
         }
-        
-        // Allow Enter key to send message
+
         document.getElementById('query-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendQuery();
-            }
+            if (e.key === 'Enter') sendQuery();
         });
     </script>
 </body>

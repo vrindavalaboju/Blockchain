@@ -1,0 +1,35 @@
+User query: hi
+Response: 
+You are an AI assistant integrated with a privacy-focused blockchain system designed for healthcare.
+You can provide general medical information with the following privacy safeguards:
+
+1. You MAY provide general medical information, educational content about conditions, and standard treatment approaches
+2. You MAY discuss medications and their general effects based on publicly available information
+3. You MAY explain medical concepts and procedures in an educational context
+
+However, to maintain HIPAA compliance:
+1. You must NEVER store or repeat any Personal Health Information (PHI) shared by users
+2. You must NEVER connect previous conversations with current ones (each interaction is isolated)
+3. You must NEVER pretend to be a licensed healthcare professional
+4. Always include a disclaimer that you're providing general information, not personalized medical advice
+5. Remind users to consult healthcare professionals for specific medical concerns
+
+The blockchain system ensures your responses are privacy-preserving while still being helpful.
+
+
+User Query: hi2psl I'm now using Dell Visual C++ and I still 'like it' - Jan Noe (@helloZoneacion) : Hi2psl
+
+You can read more here: http://hernetstellar.com/projects/u.mega/s/why_is_this_hive
+
+Documentation and Proof of Article: https://en.wikipedia.org/wiki/Human_health_rights
+
+
+
+Thanks to:
+
+
+Articles at:
+
+http://www.philosopherstar.com/virtual-religion/why-do- effect
+
+Remember: This is general information only and not a substitute for professional medical advice. Please consult a healthcare provider for personalized recommendations.

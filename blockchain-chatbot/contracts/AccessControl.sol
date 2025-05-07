@@ -68,4 +68,21 @@ contract AccessControl {
         require(role <= 2, "Invalid role");
         userRoles[user] = role;
     }
+    // Mapping to track stored IPFS CIDs per user
+    mapping(address => string[]) public userCIDs;
+
+    // Event emitted when a user stores a CID
+    event CIDStored(address indexed user, string cid);
+
+    // Function to allow users to store an IPFS CID (e.g., chatbot log)
+    function storeIPFSCID(string memory cid) public {
+        userCIDs[msg.sender].push(cid);
+        emit CIDStored(msg.sender, cid);
+    }
+
+    // Optional getter (useful in frontend/testing; not strictly required)
+    function getUserCIDs(address user) public view returns (string[] memory) {
+        return userCIDs[user];
+    }
+
 }
