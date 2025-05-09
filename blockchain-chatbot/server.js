@@ -4,7 +4,8 @@ const Web3 = require('web3');
 const fs = require('fs');
 const path = require('path');
 const uploadToPinata = require('./pinataUploader'); // ✅ NEW
-const { generateResponse, createResponseHash } = require('./llm-service');
+// const { generateResponse, createResponseHash } = require('./llm-service');
+const { generateResponse, createResponseHash } = require('./llama-service');
 
 require('dotenv').config(); // Make sure to load your .env
 

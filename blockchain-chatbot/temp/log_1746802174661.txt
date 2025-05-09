@@ -1,0 +1,13 @@
+User query: What are the symptoms for diabetes
+Response: Common symptoms of the common cold include:
+• Runny or stuffy nose
+• Sore throat
+• Coughing
+• Sneezing
+• Mild headache
+• Low-grade fever (sometimes)
+• Mild body aches
+
+These symptoms typically develop 1-3 days after exposure to a cold virus and can last for 7-10 days. The common cold is caused by various viruses, with rhinoviruses being the most common.
+
+Treatment is generally focused on relieving symptoms through rest, staying hydrated, and using over-the-counter medications as needed. Antibiotics are not effective against viral infections like the common cold.
