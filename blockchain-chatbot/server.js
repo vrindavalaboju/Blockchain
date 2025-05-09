@@ -3,11 +3,10 @@ const cors = require('cors');
 const Web3 = require('web3');
 const fs = require('fs');
 const path = require('path');
-const uploadToPinata = require('./pinataUploader'); // ✅ NEW
-// const { generateResponse, createResponseHash } = require('./llm-service');
+const uploadToPinata = require('./pinataUploader');
 const { generateResponse, createResponseHash } = require('./llama-service');
-
-require('dotenv').config(); // Make sure to load your .env
+const { filterSensitiveContent } = require('./nlp-filter'); // ✅ Use real NLP filter
+require('dotenv').config();
 
 // Load contract ABI
 const contractABI = JSON.parse(
@@ -27,46 +26,26 @@ app.use(express.json());
 const web3 = new Web3('http://localhost:8545');
 const accessControlContract = new web3.eth.Contract(contractABI, contractAddress);
 
-// Simple NLP filter function
-function filterSensitiveContent(query) {
-  const sensitiveKeywords = ['diagnosis', 'medication', 'patient', 'treatment', 'medical'];
-  const containsSensitive = sensitiveKeywords.some(keyword => query.toLowerCase().includes(keyword));
-  
-  return {
-    allowed: !containsSensitive,
-    reason: containsSensitive ? 'Contains sensitive healthcare keywords' : 'No sensitive content detected'
-  };
-}
-
+// Default route
 app.get('/', (req, res) => {
   res.send(`
     <html>
-      <head>
-        <title>Healthcare Blockchain Chatbot</title>
-        <style>
-          body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-          h1 { color: #2c3e50; }
-          code { background-color: #f7f7f7; padding: 2px 5px; border-radius: 3px; }
-        </style>
-      </head>
-      <body>
+      <head><title>Healthcare Blockchain Chatbot</title></head>
+      <body style="font-family: Arial; padding: 20px;">
         <h1>Healthcare Blockchain Chatbot API</h1>
         <p>This is the API server for the HIPAA-compliant blockchain-protected healthcare chatbot.</p>
-        <p>To interact with the chatbot, please:</p>
-        <ol>
-          <li>Open the <code>client.html</code> file in your browser</li>
-          <li>Or make POST requests to <code>/api/query</code> with a JSON body containing a query field</li>
-        </ol>
+        <p>Use <code>/client</code> or POST to <code>/api/query</code> with a JSON query.</p>
       </body>
     </html>
   `);
 });
 
+// Serve client UI
 app.get('/client', (req, res) => {
   res.sendFile(path.join(__dirname, 'client.html'));
 });
 
-// Chatbot API
+// Chatbot API route
 app.post('/api/query', async (req, res) => {
   try {
     const { query } = req.body;
@@ -88,54 +67,11 @@ app.post('/api/query', async (req, res) => {
 
     // Step 2: Blockchain validation
     const accounts = await web3.eth.getAccounts();
+    const sender = accounts[0];
     try {
       const validateResult = await accessControlContract.methods.validateQuery(query)
-        .send({ from: accounts[0], gas: 200000 });
+        .send({ from: sender, gas: 200000 });
       console.log('Blockchain validation result:', validateResult);
-
-      // Step 3: LLM generation
-      const llmResult = await generateResponse(query);
-      const llmResponse = llmResult.text;
-      let ipfsUrl = null;
-      // Step 4: Upload to Pinata
-      try {
-        const logContent = `User query: ${query}\nResponse: ${llmResponse}`;
-        const filePath = `./temp/log_${Date.now()}.txt`;
-
-        if (!fs.existsSync('./temp')) fs.mkdirSync('./temp');
-        fs.writeFileSync(filePath, logContent);
-
-        const cid = await uploadToPinata(filePath);
-        fs.unlinkSync(filePath);
-        ipfsUrl = `https://gateway.pinata.cloud/ipfs/${cid}`;
-        console.log('Uploaded to IPFS via Pinata:', cid);
-
-
-        // Optional: store CID on chain
-        if (accessControlContract.methods.storeIPFSCID) {
-          await accessControlContract.methods.storeIPFSCID(cid)
-            .send({ from: accounts[0], gas: 200000 });
-        }
-      } catch (pinataErr) {
-        console.error('Pinata upload failed:', pinataErr.message);
-      }
-
-      // Step 5: Log response on-chain (if implemented)
-      try {
-        await accessControlContract.methods.logQueryProcessing(query, llmResponse)
-          .send({ from: accounts[0], gas: 200000 });
-      } catch (logErr) {
-        console.log('Logging to blockchain failed, continuing anyway:', logErr.message);
-      }
-
-      return res.json({
-        status: 'approved',
-        message: llmResponse,
-        metadata: {
-          responseHash: '...', // if you have this
-          ipfsUrl: ipfsUrl      // 👈 This is key!
-        }
-      });
     } catch (error) {
       console.error('Blockchain validation error:', error);
       return res.json({
@@ -143,14 +79,59 @@ app.post('/api/query', async (req, res) => {
         message: 'Error during blockchain validation: ' + error.message
       });
     }
+
+    // Step 3: LLM response generation
+    const llmResult = await generateResponse(query);
+    const llmResponse = llmResult.text;
+    let ipfsUrl = null;
+
+    // Step 4: Upload log to IPFS via Pinata
+    try {
+      const logContent = `User query: ${query}\nResponse: ${llmResponse}`;
+      const filePath = `./temp/log_${Date.now()}.txt`;
+
+      if (!fs.existsSync('./temp')) fs.mkdirSync('./temp');
+      fs.writeFileSync(filePath, logContent);
+
+      const cid = await uploadToPinata(filePath);
+      fs.unlinkSync(filePath);
+      ipfsUrl = `https://gateway.pinata.cloud/ipfs/${cid}`;
+      console.log('Uploaded to IPFS via Pinata:', cid);
+
+      // Optional: store CID on chain
+      if (accessControlContract.methods.storeIPFSCID) {
+        await accessControlContract.methods.storeIPFSCID(cid)
+          .send({ from: sender, gas: 200000 });
+      }
+    } catch (pinataErr) {
+      console.error('Pinata upload failed:', pinataErr.message);
+    }
+
+    // Step 5: Log query and response on-chain
+    // try {
+    //   await accessControlContract.methods.logQueryProcessing(query, llmResponse)
+    //     .send({ from: sender, gas: 200000 });
+    // } catch (logErr) {
+    //   console.warn('Blockchain log skipped:', logErr.message);
+    // }
+
+    // Final response to client
+    return res.json({
+      status: 'approved',
+      message: llmResponse,
+      metadata: {
+        responseHash: '...', // Optional hash logic
+        ipfsUrl
+      }
+    });
   } catch (error) {
-    console.error('Error processing query:', error);
+    console.error('Unhandled server error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Start server
+// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });

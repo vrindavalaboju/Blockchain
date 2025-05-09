@@ -11,7 +11,7 @@ async function uploadToPinata(filePath) {
   form.append('file', fs.createReadStream(filePath));
 
   const headers = {
-    ...form.getHeaders(), // ⚠️ Important: this sets correct Content-Type boundary
+    ...form.getHeaders(),
     pinata_api_key: process.env.PINATA_API_KEY,
     pinata_secret_api_key: process.env.PINATA_SECRET_API_KEY
   };

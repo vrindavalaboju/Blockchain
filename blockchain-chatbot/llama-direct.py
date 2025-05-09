@@ -24,7 +24,7 @@ try:
         "meta-llama/Llama-2-7b-chat-hf",
         torch_dtype=torch.float16,
         device_map="auto",
-        load_in_8bit=True  # Use 8-bit quantization to reduce memory usage
+        load_in_8bit=True  # Use 8-bit to reduce memory usage
     )
     
     # Format prompt for Llama 2 chat models
