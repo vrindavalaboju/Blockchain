@@ -30,12 +30,11 @@ async function generateResponse(query) {
   try {
     console.log('Processing query:', query);
     
-    // Use our robust healthcare knowledge base
-    return generateHealthcareResponse(query);
+    return generateHelathResp(query);
     
   } catch (error) {
     console.error('Error in generateResponse:', error);
-    return generateHealthcareResponse(query); // Always fall back to our knowledge base
+    return generateHelathResp(query); 
   }
 }
 
@@ -44,7 +43,7 @@ async function generateResponse(query) {
  * @param {string} query - The user's query
  * @returns {Object} - The response object
  */
-function generateHealthcareResponse(query) {
+function generateHelathResp(query) {
   console.log('Generating healthcare response for:', query);
   
   // Convert query to lowercase for easier matching
@@ -227,8 +226,8 @@ function generateHealthcareResponse(query) {
 
 /**
  * Creates a hash of the response for blockchain storage
- * @param {string} response - The full response text
- * @returns {string} - A hash representation of the response
+ * @param {string} response 
+ * @returns {string}
  */
 function createResponseHash(response) {
   return crypto.createHash('sha256').update(response).digest('hex');

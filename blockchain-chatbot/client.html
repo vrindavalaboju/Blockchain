@@ -114,7 +114,6 @@
         .disclaimer strong {
             font-weight: bold;
         }
-        /* Improved bullet points with less spacing */
         .bot-message ul {
             margin: 0;
             padding-left: 18px;
@@ -166,14 +165,12 @@
                 removeMessage(processingId);
 
                 if (data.status === 'approved') {
-                    // Remove the disclaimer text from the message if present
                     let messageText = data.message;
                     const disclaimerText = "Remember: This is general information only and not a substitute for professional medical advice. Please consult a healthcare provider for personalized recommendations.";
                     if (messageText.includes(disclaimerText)) {
                         messageText = messageText.replace(disclaimerText, "");
                     }
                     
-                    // Remove "Based on your query..." intro if present
                     messageText = messageText.replace(/^Based on your query about.*?\", I can provide the following information:\s*/, "");
                     messageText = messageText.replace(/^Based on your query about.*?\", I can provide general health information.\s*/, "");
                     
@@ -198,9 +195,7 @@
             else if (type === 'bot') messageDiv.classList.add('bot-message');
             else messageDiv.classList.add('status-message');
 
-            // Process bot messages to improve formatting
             if (type === 'bot') {
-                // Convert text to paragraphs and bullet points
                 let processedText = text
                     // Add paragraph tags for better spacing control
                     .replace(/\n\n/g, '</p><p>')
@@ -209,7 +204,7 @@
                     // Wrap consecutive list items with ul tags
                     .replace(/(<li>.*?<\/li>)+/g, '<ul>$&</ul>');
                 
-                // Wrap in paragraph tags
+                
                 if (!processedText.startsWith('<p>')) {
                     processedText = '<p>' + processedText;
                 }
@@ -217,7 +212,7 @@
                     processedText = processedText + '</p>';
                 }
                 
-                // Clean up any duplicate or nested tags
+                
                 processedText = processedText
                     .replace(/<\/p><p><ul>/g, '<ul>')
                     .replace(/<\/ul><\/p><p>/g, '</ul><p>')

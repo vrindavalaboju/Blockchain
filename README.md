@@ -109,7 +109,7 @@ A healthcare catered chatbot that utilizes blockchain tehcnology aimed to enhanc
 Blocked if:
 
 * Query contains a name ("My name is john")
-* Mentions a blood type (A, B, AB, O, Rh+/-)
+* Mentions a blood type (A, B, AB)
 * Includes numeric lab results ("Hemoglobin: 13.5")
 
 Allowed:

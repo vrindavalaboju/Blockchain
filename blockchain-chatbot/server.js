@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const uploadToPinata = require('./pinataUploader');
 const { generateResponse, createResponseHash } = require('./llama-service');
-const { filterSensitiveContent } = require('./nlp-filter'); // ✅ Use real NLP filter
+const { filterSensitiveContent } = require('./nlp-filter');
 require('dotenv').config();
 
 // Load contract ABI
@@ -26,7 +26,7 @@ app.use(express.json());
 const web3 = new Web3('http://localhost:8545');
 const accessControlContract = new web3.eth.Contract(contractABI, contractAddress);
 
-// Default route
+// Default
 app.get('/', (req, res) => {
   res.send(`
     <html>
@@ -56,7 +56,7 @@ app.post('/api/query', async (req, res) => {
 
     console.log('Received query:', query);
 
-    // Step 1: NLP filter
+    //NLP filter
     const filterResult = filterSensitiveContent(query);
     if (!filterResult.allowed) {
       return res.json({ 
@@ -65,7 +65,7 @@ app.post('/api/query', async (req, res) => {
       });
     }
 
-    // Step 2: Blockchain validation
+    //Blockchain validation
     const accounts = await web3.eth.getAccounts();
     const sender = accounts[0];
     try {
@@ -73,19 +73,18 @@ app.post('/api/query', async (req, res) => {
         .send({ from: sender, gas: 200000 });
       console.log('Blockchain validation result:', validateResult);
     } catch (error) {
-      console.error('Blockchain validation error:', error);
       return res.json({
         status: 'error',
         message: 'Error during blockchain validation: ' + error.message
       });
     }
 
-    // Step 3: LLM response generation
+    // LLM response generation
     const llmResult = await generateResponse(query);
     const llmResponse = llmResult.text;
     let ipfsUrl = null;
 
-    // Step 4: Upload log to IPFS via Pinata
+    //Upload log to IPFS via Pinata
     try {
       const logContent = `User query: ${query}\nResponse: ${llmResponse}`;
       const filePath = `./temp/log_${Date.now()}.txt`;
@@ -98,7 +97,7 @@ app.post('/api/query', async (req, res) => {
       ipfsUrl = `https://gateway.pinata.cloud/ipfs/${cid}`;
       console.log('Uploaded to IPFS via Pinata:', cid);
 
-      // Optional: store CID on chain
+      //store CID on chain
       if (accessControlContract.methods.storeIPFSCID) {
         await accessControlContract.methods.storeIPFSCID(cid)
           .send({ from: sender, gas: 200000 });
@@ -107,7 +106,7 @@ app.post('/api/query', async (req, res) => {
       console.error('Pinata upload failed:', pinataErr.message);
     }
 
-    // Step 5: Log query and response on-chain
+    //Log query and response on-chain
     // try {
     //   await accessControlContract.methods.logQueryProcessing(query, llmResponse)
     //     .send({ from: sender, gas: 200000 });
@@ -120,12 +119,12 @@ app.post('/api/query', async (req, res) => {
       status: 'approved',
       message: llmResponse,
       metadata: {
-        responseHash: '...', // Optional hash logic
+        responseHash: '...',
         ipfsUrl
       }
     });
   } catch (error) {
-    console.error('Unhandled server error:', error);
+    console.error('error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

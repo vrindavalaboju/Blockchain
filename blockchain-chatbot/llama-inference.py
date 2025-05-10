@@ -3,12 +3,12 @@ import json
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# Check if we have enough command line arguments
+# Check line arguments
 if len(sys.argv) < 2:
     print("Usage: python llama_inference.py \"your prompt here\"")
     sys.exit(1)
 
-# Get the input data from command line argument
+# Get the input data
 input_data = sys.argv[1]
 
 try:
@@ -48,10 +48,9 @@ try:
             top_k=10
         )
     
-    # Decode and clean response
+    # Decode
     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
     
-    # Remove the prompt part to get only the model's reply
     if response.startswith(formatted_prompt):
         response = response[len(formatted_prompt):].strip()
     

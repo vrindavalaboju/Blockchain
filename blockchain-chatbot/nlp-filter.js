@@ -28,14 +28,14 @@ function trainClassifier() {
 }
 trainClassifier();
 
-// NEW: Regexes and checks
+//Regexes and checks
 const bloodTypeRegex = /\bblood\s*type\s*(A|B|AB|O)[+-]?\b/i;
 const labResultPattern = /\b(glucose|hemoglobin|hdl|ldl|cholesterol|platelets|wbc|rbc|creatinine|sodium|potassium|bilirubin)\b.{0,20}(\d{1,3}(\.\d+)?)/i;
 
 function filterSensitiveContent(query) {
   const doc = nlp(query);
 
-  // 1. Block if query contains a person's name
+  // Block if query person's name
   const people = doc.people().out('array');
   if (people.length > 0) {
     return {
@@ -44,7 +44,7 @@ function filterSensitiveContent(query) {
     };
   }
 
-  // 2. Block if query contains blood type
+  // Block if query blood type
   if (bloodTypeRegex.test(query)) {
     return {
       allowed: false,
@@ -52,7 +52,7 @@ function filterSensitiveContent(query) {
     };
   }
 
-  // 3. Block if query contains possible lab result with numeric value
+  //Block if query lab result with numeric value
   if (labResultPattern.test(query)) {
     return {
       allowed: false,
@@ -60,14 +60,11 @@ function filterSensitiveContent(query) {
     };
   }
 
-  // 4. (Optional) Use classifier for extra sensitivity tagging — but don’t block
-  const classification = classifier.classify(query);
-  console.log(`Classifier label: ${classification}`);
 
   // All checks passed
   return {
     allowed: true,
-    reason: 'No personally identifiable sensitive content detected'
+    reason: 'No personal sensitive content detected'
   };
 }
 

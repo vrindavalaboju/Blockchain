@@ -24,13 +24,13 @@ try:
         "meta-llama/Llama-2-7b-chat-hf",
         torch_dtype=torch.float16,
         device_map="auto",
-        load_in_8bit=True  # Use 8-bit to reduce memory usage
+        load_in_8bit=True 
     )
     
     # Format prompt for Llama 2 chat models
     prompt = f"<s>[INST] <<SYS>>\n{system_prompt}\n<</SYS>>\n\n{user_query} [/INST]"
     
-    # Tokenize the prompt
+    # Tokenize prompt
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     
     # Generate
@@ -47,7 +47,7 @@ try:
     # Decode the response
     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
     
-    # Remove the prompt part to get only the model's reply
+    # Remove prompt part
     if response.startswith(prompt):
         response = response[len(prompt):].strip()
     
