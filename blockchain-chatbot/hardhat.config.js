@@ -6,7 +6,7 @@ module.exports = {
     development: {
       url: "http://127.0.0.1:8545",
       chainId: 1337,
-      accounts: ["0x7948f94207e883f228ddb0f46162a4365c45e79014ee76b873f2dc706a4b51d3"]
+      accounts: ["0x830d10872cee1c0ce33118486a861d13c0c2cbb3cab9e6b9d34d14d3dc95fc59"]
     }
   }
 };
